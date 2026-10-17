@@ -8,6 +8,7 @@
     <Nullable>enable</Nullable>
     <AssemblyName>ScreenshotOrganizer</AssemblyName>
     <RootNamespace>ScreenshotOrganizer</RootNamespace>
+    <ApplicationIcon>icon\ScreenshotOrganizer.ico</ApplicationIcon>
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
@@ -16,6 +17,10 @@
     <TrimMode>partial</TrimMode>
     <_SuppressWinFormsTrimError>true</_SuppressWinFormsTrimError>
   </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="icon\ScreenshotOrganizer.ico" LogicalName="ScreenshotOrganizer.Icon.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <TrimmerRootAssembly Include="System.Windows.Forms" />
