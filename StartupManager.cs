@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.Win32;
 
 namespace ScreenshotOrganizer;
@@ -12,9 +13,9 @@ internal static class StartupManager
         using var key = Registry.CurrentUser.OpenSubKey(RunKeyPath, writable: true)
             ?? Registry.CurrentUser.CreateSubKey(RunKeyPath);
 
-        var exePath = Environment.ProcessPath ?? Path.Combine(AppContext.BaseDirectory, "ScreenshotOrganizer.exe");
-        key.SetValue(ValueName, $"\"{exePath}\"");
-        Logger.Info($"Registered startup entry: {exePath}");
+        var startupCommand = GetStartupCommand();
+        key.SetValue(ValueName, startupCommand, RegistryValueKind.String);
+        Logger.Info($"Registered startup entry: {startupCommand}");
     }
 
     public static void Unregister()
@@ -30,6 +31,51 @@ internal static class StartupManager
     public static bool IsRegistered()
     {
         using var key = Registry.CurrentUser.OpenSubKey(RunKeyPath);
-        return key?.GetValue(ValueName) != null;
+        var registeredCommand = key?.GetValue(ValueName) as string;
+        return string.Equals(
+            NormalizeCommand(registeredCommand),
+            NormalizeCommand(GetStartupCommand()),
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    public static string? GetRegisteredCommand()
+    {
+        using var key = Registry.CurrentUser.OpenSubKey(RunKeyPath);
+        return key?.GetValue(ValueName) as string;
+    }
+
+    private static string GetStartupCommand()
+    {
+        var exePath = GetExecutablePath();
+        return $"\"{exePath}\"";
+    }
+
+    private static string GetExecutablePath()
+    {
+        var candidates = new[]
+        {
+            Environment.ProcessPath,
+            Process.GetCurrentProcess().MainModule?.FileName,
+            Path.Combine(AppContext.BaseDirectory, "ScreenshotOrganizer.exe")
+        };
+
+        foreach (var candidate in candidates)
+        {
+            if (!string.IsNullOrWhiteSpace(candidate) &&
+                candidate.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) &&
+                File.Exists(candidate))
+            {
+                return Path.GetFullPath(candidate);
+            }
+        }
+
+        throw new InvalidOperationException("Could not determine the executable path for startup registration.");
+    }
+
+    private static string NormalizeCommand(string? command)
+    {
+        return string.IsNullOrWhiteSpace(command)
+            ? string.Empty
+            : command.Trim().Replace("\"", string.Empty);
     }
 }

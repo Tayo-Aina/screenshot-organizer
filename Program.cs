@@ -8,6 +8,7 @@ internal class Program
     private static Mutex? _mutex;
     private static ScreenshotWatcher? _watcher;
     private static TrayIconManager? _trayIcon;
+    private static bool _cleanupComplete;
 
     [STAThread]
     public static void Main(string[] args)
@@ -65,9 +66,31 @@ internal class Program
 
     private static void Cleanup()
     {
+        if (_cleanupComplete)
+            return;
+
+        _cleanupComplete = true;
+
         _watcher?.Dispose();
+        _watcher = null;
+
         _trayIcon?.Dispose();
-        _mutex?.Close();
+        _trayIcon = null;
+
+        if (_mutex != null)
+        {
+            try
+            {
+                _mutex.ReleaseMutex();
+            }
+            catch (ApplicationException)
+            {
+            }
+
+            _mutex.Dispose();
+            _mutex = null;
+        }
+
         Logger.Info("Screenshot Organizer stopped");
     }
 }
